@@ -3,17 +3,13 @@ import json
 import httpx
 import arabic_reshaper
 from bidi.algorithm import get_display
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect
-from fastapi.responses import HTMLResponse
+from fastapi import FastAPI, Request
+from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
-from slowapi import Limiter
-from slowapi.util import get_remote_address
+from pydantic import BaseModel
 
-# 1. إعداد كابح الضغط لحماية باقة Render المجانية (512MB RAM)
-limiter = Limiter(key_func=get_remote_address)
 app = FastAPI(title="VIDEO-LIKE Arabic Studio")
 
-# السماح بالاتصال من أي واجهة خارجية بأمان
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -22,57 +18,62 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# 2. جلب مفتاح جوجل المجاني من متغيرات البيئة في Render
-GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "")
+GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "").strip()
+
+class VideoRequest(BaseModel):
+    idea: str
+    style: str
+    mood: str
 
 def fix_arabic_text(text: str) -> str:
-    """تصحيح النصوص العربية وضبط اتجاهها من اليمين لليسار (RTL) لتجنب تقطيع الحروف"""
-    reshaped = arabic_reshaper.reshape(text)
-    return get_display(reshaped)
+    """تصحيح النصوص العربية وضبط اتجاهها من اليمين لليسار (RTL)"""
+    try:
+        reshaped = arabic_reshaper.reshape(text)
+        return get_display(reshaped)
+    except Exception:
+        return text
 
-async def generate_pro_prompt(user_idea: str, style: str, mood: str) -> dict:
-    """مولد البرومبت الاحترافي السحابي عبر Google Gemini API المجاني"""
+@app.get("/", response_class=HTMLResponse)
+async def serve_ui():
+    """عرض الواجهة الفخمة مباشرة"""
+    if os.path.exists("index.html"):
+        with open("index.html", "r", encoding="utf-8") as f:
+            return f.read()
+    return HTMLResponse("<h1>ملف index.html غير موجود</h1>")
+
+@app.post("/api/generate")
+async def generate_studio_content(req: VideoRequest):
+    """نقطة الاتصال الحقيقية لتوليد السكربت والبرومبت الاحترافي عبر Gemini"""
+    if not req.idea.strip():
+        return JSONResponse(status_code=400, content={"error": "يرجى كتابة فكرة الفيديو أولاً."})
+
+    if not GEMINI_API_KEY:
+        return JSONResponse(status_code=500, content={"error": "مفتاح GEMINI_API_KEY غير مضاف في إعدادات Render."})
+
     system_instruction = f"""
-    أنت المخرج السينمائي ومهندس البرومبت الأسطوري لأداة VIDEO-LIKE.
-    مهمتك: تحويل فكرة المستخدم إلى 3 مشاهد قصيرة ومشوقة متسلسلة.
-    النمط التصميمي المطلوب: {style}
-    الإعداد المزاجي والإيقاع: {mood} (وثائقي = رصين وهادئ، سينمائي = عميق ودرامي، ديناميكي = سريع وحماسي).
+    أنت مخرج سينمائي ومهندس برومبت محترف لأداة VIDEO-LIKE.
+    حول فكرة المستخدم إلى 3 مشاهد متسلسلة وجذابة لفيديو قصير.
+    النمط التصميمي المطلوب: {req.style}
+    الإيقاع والمزاج: {req.mood}
 
-    قواعد الإخراج الإلزامية:
-    1. اكتب السرد العربي (arabic_narration) بلغة عربية فصحى جذابة ومختصرة تناسب الفيديوهات القصيرة.
-    2. اكتب الوصف البصري (visual_prompt_en) باللغة الإنجليزية بدقة فائقة ليفهمه محرك الفيديو، مع تحديد حركة الكاميرا والإضاءة بما يتوافق مع النمط ({style}) والإيقاع ({mood}).
-    3. أخرج النتيجة بصيغة JSON فقط بدون أي مقدمات أو نصوص إضافية، وبنفس هذا الهيكل تماماً:
+    أخرج النتيجة بصيغة JSON فقط بدون أي نص إضافي خارج القوسين، وبنفس هذا الهيكل الدقيق:
     {{
         "scenes": [
             {{
                 "scene_number": 1,
-                "arabic_narration": "النص العربي المشوق للمشهد الأول",
-                "visual_prompt_en": "Detailed cinematic prompt in English for VIDEO-LIKE engine",
-                "transition": "smooth_zoom_in"
+                "arabic_narration": "التعليق الصوتي العربي المشوق للمشهد الأول",
+                "visual_prompt_en": "Detailed cinematic visual prompt in English describing the scene, camera angle, lighting, and motion for VIDEO-LIKE AI",
+                "transition": "نوع الانتقال المقترح"
             }}
         ]
     }}
     """
-    
-    # وضع التشغيل التجريبي في حال نسيان إضافة المفتاح في Render
-    if not GEMINI_API_KEY:
-        return {
-            "scenes": [
-                {
-                    "scene_number": 1,
-                    "arabic_narration": f"اكتشف أسرار {user_idea} بأسلوب مذهل.",
-                    "visual_prompt_en": f"Cinematic {style} scene about {user_idea}, {mood} lighting, 4k, ultra detailed",
-                    "transition": "fade_in"
-                }
-            ]
-        }
 
-    # الاتصال السريع بسيرفرات Google Gemini السحابية مجاناً
     url = f"https://googleapis.com{GEMINI_API_KEY}"
     headers = {"Content-Type": "application/json"}
     payload = {
         "contents": [{
-            "parts": [{"text": f"{system_instruction}\n\nفكرة المستخدم: {user_idea}"}]
+            "parts": [{"text": f"{system_instruction}\n\nفكرة الفيديو: {req.idea}"}]
         }],
         "generationConfig": {
             "responseMimeType": "application/json",
@@ -80,64 +81,23 @@ async def generate_pro_prompt(user_idea: str, style: str, mood: str) -> dict:
         }
     }
 
-    async with httpx.AsyncClient(timeout=25.0) as client:
-        response = await client.post(url, headers=headers, json=payload)
-        response.raise_for_status()
-        data = response.json()
-        result_text = data["candidates"]["content"]["parts"]["text"]
-        return json.loads(result_text)
-
-@app.get("/", response_class=HTMLResponse)
-async def serve_ui():
-    """عرض ملف الواجهة الفخمة السلسة (index.html) مباشرة"""
-    if os.path.exists("index.html"):
-        with open("index.html", "r", encoding="utf-8") as f:
-            return f.read()
-    return HTMLResponse("<h1>يرجى التأكد من وجود ملف index.html في نفس مجلد المشروع</h1>")
-
-@app.websocket("/ws/studio")
-async def websocket_endpoint(websocket: WebSocket):
-    """قناة الاتصال الحية (WebSocket) لتحديث الواجهة دون تجميد السيرفر"""
-    await websocket.accept()
     try:
-        while True:
-            raw_data = await websocket.receive_text()
-            request_data = json.loads(raw_data)
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            response = await client.post(url, headers=headers, json=payload)
             
-            idea = request_data.get("idea", "").strip()
-            style = request_data.get("style", "موشن جرافيك حديث")
-            mood = request_data.get("mood", "سينمائي")
+            if response.status_code != 200:
+                return JSONResponse(status_code=response.status_code, content={"error": f"خطأ من خادم جوجل: {response.text}"})
 
-            if not idea:
-                await websocket.send_json({"step": "error", "msg": "⚠️ يرجى كتابة فكرة الفيديو أولاً."})
-                continue
+            data = response.json()
+            # المسار الصحيح لاستخراج النص من استجابة Gemini
+            raw_text = data["candidates"][0]["content"]["parts"][0]["text"]
+            parsed_data = json.loads(raw_text)
 
-            # الخطوة 1: إرسال تحديث حي للواجهة
-            await websocket.send_json({
-                "step": 1, 
-                "msg": f"🧠 جاري تحليل الفكرة وتوليد برومبت ({style} - {mood}) عبر Gemini..."
-            })
-            
-            # الخطوة 2: توليد السكربت والبرومبت سحابياً (صفر استهلاك لـ RAM السيرفر)
-            pro_script = await generate_pro_prompt(idea, style, mood)
-            
-            # الخطوة 3: معالجة النصوص العربية وتهيئتها للرندرة
-            for scene in pro_script.get("scenes", []):
+            # معالجة النصوص العربية لكل مشهد
+            for scene in parsed_data.get("scenes", []):
                 scene["fixed_arabic"] = fix_arabic_text(scene.get("arabic_narration", ""))
 
-            await websocket.send_json({
-                "step": 2, 
-                "msg": "🎨 تم ضبط الخطوط العربية وهندسة المشاهد بنجاح!"
-            })
+            return {"status": "success", "data": parsed_data}
 
-            # الخطوة 4: إرسال الحزمة النهائية الجاهزة للواجهة
-            await websocket.send_json({
-                "step": 3,
-                "msg": "✅ اكتمل التجهيز! البيانات والبرومبت جاهزة لأداة VIDEO-LIKE.",
-                "generated_payload": pro_script
-            })
-
-    except WebSocketDisconnect:
-        pass
     except Exception as e:
-        await websocket.send_json({"step": "error", "msg": f"❌ حدث خطأ أثناء المعالجة: {str(e)}"})
+        return JSONResponse(status_code=500, content={"error": f"حدث خطأ أثناء المعالجة: {str(e)}"})
