@@ -4,172 +4,245 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>استديو VIDEO-LIKE العربي الذكي</title>
-    <script src="https://tailwindcss.com"></script>
     <link href="https://googleapis.com" rel="stylesheet">
     <style>
-        body { font-family: 'Cairo', sans-serif; background-color: #090d16; color: #f8fafc; }
-        .glass-panel {
-            background: rgba(30, 41, 59, 0.6);
-            backdrop-filter: blur(12px);
-            border: 1px solid rgba(255, 255, 255, 0.08);
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Cairo', sans-serif; }
+        body {
+            background: radial-gradient(circle at top, #1e293b 0%, #090d16 100%);
+            color: #f8fafc;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 30px 15px;
         }
-        .style-btn.active {
-            background: linear-gradient(135deg, #f97316, #ea580c);
+        .header { text-align: center; max-width: 700px; margin-bottom: 30px; }
+        .badge {
+            display: inline-block;
+            padding: 5px 15px;
+            background: rgba(249, 115, 22, 0.15);
+            color: #fb923c;
+            border: 1px solid rgba(249, 115, 22, 0.3);
+            border-radius: 50px;
+            font-size: 12px;
+            font-weight: 700;
+            margin-bottom: 10px;
+        }
+        h1 { font-size: 2.2rem; font-weight: 900; margin-bottom: 10px; color: #ffffff; }
+        .subtitle { color: #94a3b8; font-size: 0.95rem; }
+        
+        .studio-card {
+            width: 100%;
+            max-width: 850px;
+            background: rgba(15, 23, 42, 0.85);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 24px;
+            padding: 30px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6);
+        }
+        .section-label { display: block; font-size: 0.95rem; font-weight: 700; color: #cbd5e1; margin-bottom: 12px; }
+        textarea {
+            width: 100%;
+            background: #090d16;
+            border: 1px solid #334155;
+            border-radius: 16px;
+            padding: 15px;
+            color: #ffffff;
+            font-size: 1rem;
+            resize: vertical;
+            margin-bottom: 25px;
+            transition: border-color 0.3s;
+        }
+        textarea:focus { outline: none; border-color: #f97316; }
+
+        .grid-styles {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+            gap: 10px;
+            margin-bottom: 25px;
+        }
+        .grid-moods {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-bottom: 30px;
+        }
+        .option-btn {
+            background: #1e293b;
+            border: 1px solid #334155;
+            color: #e2e8f0;
+            padding: 12px 15px;
+            border-radius: 12px;
+            font-size: 0.9rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-align: center;
+        }
+        .option-btn:hover { border-color: #f97316; transform: translateY(-2px); }
+        .option-btn.active-style {
+            background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
             border-color: #fdba74;
-            color: white;
-            box-shadow: 0 4px 15px rgba(249, 115, 22, 0.3);
+            color: #ffffff;
+            box-shadow: 0 4px 15px rgba(249, 115, 22, 0.4);
         }
-        .mood-btn.active {
-            background: #3b82f6;
+        .option-btn.active-mood {
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
             border-color: #93c5fd;
-            color: white;
+            color: #ffffff;
+            box-shadow: 0 4px 15px rgba(59, 130, 246, 0.4);
         }
+
+        .submit-btn {
+            width: 100%;
+            padding: 16px;
+            border: none;
+            border-radius: 16px;
+            background: linear-gradient(135deg, #f97316 0%, #d97706 100%);
+            color: #ffffff;
+            font-size: 1.1rem;
+            font-weight: 900;
+            cursor: pointer;
+            box-shadow: 0 10px 25px rgba(249, 115, 22, 0.3);
+            transition: all 0.3s;
+        }
+        .submit-btn:hover { filter: brightness(1.1); }
+        .submit-btn:disabled { background: #475569; cursor: not-allowed; box-shadow: none; }
+
+        .status-box {
+            display: none;
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 12px;
+            background: rgba(59, 130, 246, 0.1);
+            border: 1px solid rgba(59, 130, 246, 0.3);
+            color: #93c5fd;
+            font-weight: 600;
+            text-align: center;
+        }
+        .error-box {
+            background: rgba(239, 68, 68, 0.15);
+            border-color: rgba(239, 68, 68, 0.4);
+            color: #fca5a5;
+        }
+
+        .results-container { display: none; margin-top: 30px; }
+        .results-title { font-size: 1.2rem; color: #34d399; margin-bottom: 15px; font-weight: 800; }
+        .scene-card {
+            background: #1e293b;
+            border: 1px solid #334155;
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 15px;
+        }
+        .scene-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+            font-size: 0.85rem;
+            color: #94a3b8;
+        }
+        .scene-num { color: #fb923c; font-weight: 900; font-size: 1rem; }
+        .narration-text { font-size: 1.05rem; font-weight: 700; color: #ffffff; margin-bottom: 12px; line-height: 1.6; }
+        .prompt-box {
+            background: #090d16;
+            border: 1px solid #1e293b;
+            padding: 12px;
+            border-radius: 10px;
+            font-family: monospace;
+            font-size: 0.85rem;
+            color: #34d399;
+            direction: ltr;
+            text-align: left;
+            position: relative;
+        }
+        .copy-btn {
+            margin-top: 10px;
+            background: #334155;
+            color: #fff;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-size: 0.8rem;
+            cursor: pointer;
+        }
+        .copy-btn:hover { background: #f97316; }
     </style>
 </head>
-<body class="min-h-screen flex flex-col items-center justify-center p-4 md:p-8">
+<body>
 
-    <!-- الترويسة -->
-    <header class="text-center max-w-2xl mb-8">
-        <span class="px-3 py-1 text-xs font-bold tracking-wider text-orange-400 uppercase bg-orange-500/10 rounded-full border border-orange-500/20">
-            مدعوم ببنية WebSocket فائقة الخفة
-        </span>
-        <h1 class="text-3xl md:text-5xl font-black mt-3 bg-gradient-to-l from-white via-slate-200 to-slate-400 bg-clip-text text-transparent">
-            استديو VIDEO-LIKE العربي
-        </h1>
-        <p class="text-slate-400 mt-2 text-sm md:text-base">
-            اكتب فكرتك، اختر النمط والخصائص، وسيقوم المحرك ببناء السكربت والبرومبت الاحترافي فوراً.
-        </p>
-    </header>
+    <div class="header">
+        <span class="badge">✨ مدعوم بمحرك Gemini السحابي فائق السرعة</span>
+        <h1>استديو VIDEO-LIKE العربي</h1>
+        <p class="subtitle">اكتب فكرتك، اختر النمط والخصائص، وسيقوم المحرك ببناء السكربت والبرومبت الاحترافي فوراً.</p>
+    </div>
 
-    <!-- لوحة التحكم الرئيسية -->
-    <main class="w-full max-w-4xl glass-panel rounded-3xl p-6 md:p-8 shadow-2xl">
-        
-        <!-- 1. خانة كتابة الفكرة -->
-        <div class="mb-6">
-            <label class="block text-sm font-bold text-slate-300 mb-2">💡 فكرة الفيديو أو الموضوع:</label>
-            <textarea id="videoIdea" rows="3" 
-                class="w-full bg-slate-900/80 border border-slate-700 rounded-2xl p-4 text-white placeholder-slate-500 focus:outline-none focus:border-orange-500 transition"
-                placeholder="مثال: اشرح كيف ابتكر الجزري الساعات الميكانيكية بأسلوب مشوق..."></textarea>
+    <div class="studio-card">
+        <label class="section-label">💡 فكرة الفيديو أو الموضوع:</label>
+        <textarea id="videoIdea" rows="3" placeholder="مثال: فيديو وثائقي عن تاريخ اليمن وحضارة سبأ بأسلوب مشوق..."></textarea>
+
+        <label class="section-label">🎨 اختر نمط التصميم والحركة:</label>
+        <div class="grid-styles" id="styleContainer">
+            <button type="button" class="option-btn active-style" onclick="setStyle(this, 'موشن جرافيك حديث')">موشن جرافيك</button>
+            <button type="button" class="option-btn" onclick="setStyle(this, 'تيك توك وريلز سريع')">تيك توك سريع</button>
+            <button type="button" class="option-btn" onclick="setStyle(this, 'رسوم متحركة ثلاثية الأبعاد')">كرتون 3D</button>
+            <button type="button" class="option-btn" onclick="setStyle(this, 'شرح تقني مستقبلي')">تقني / نيون</button>
+            <button type="button" class="option-btn" onclick="setStyle(this, 'سرد تاريخي وتراثي')">تاريخي وتراثي</button>
+            <button type="button" class="option-btn" onclick="setStyle(this, 'قصص كوميكس ومانجا')">كوميكس ومانجا</button>
+            <button type="button" class="option-btn" onclick="setStyle(this, 'رسم سبورة بيضاء')">سبورة بيضاء</button>
+            <button type="button" class="option-btn" onclick="setStyle(this, 'خطوط عربية حرة')">خطوط عربية</button>
         </div>
 
-        <!-- 2. اختيار نمط التصميم -->
-        <div class="mb-6">
-            <label class="block text-sm font-bold text-slate-300 mb-3">🎨 اختر نمط التصميم والحركة:</label>
-            <div class="grid grid-cols-2 sm:grid-cols-4 gap-3" id="styleContainer">
-                <button type="button" onclick="selectStyle(this, 'موشن جرافيك حديث')" class="style-btn active border border-slate-700 bg-slate-800/50 py-3 px-4 rounded-xl text-sm font-semibold transition hover:border-orange-400">موشن جرافيك</button>
-                <button type="button" onclick="selectStyle(this, 'تيك توك وريلز سريع')" class="style-btn border border-slate-700 bg-slate-800/50 py-3 px-4 rounded-xl text-sm font-semibold transition hover:border-orange-400">تيك توك سريع</button>
-                <button type="button" onclick="selectStyle(this, 'رسوم متحركة ثلاثية الأبعاد')" class="style-btn border border-slate-700 bg-slate-800/50 py-3 px-4 rounded-xl text-sm font-semibold transition hover:border-orange-400">كرتون 3D</button>
-                <button type="button" onclick="selectStyle(this, 'شرح تقني مستقبلي')" class="style-btn border border-slate-700 bg-slate-800/50 py-3 px-4 rounded-xl text-sm font-semibold transition hover:border-orange-400">تقني / نيون</button>
-                <button type="button" onclick="selectStyle(this, 'سرد تاريخي وتراثي')" class="style-btn border border-slate-700 bg-slate-800/50 py-3 px-4 rounded-xl text-sm font-semibold transition hover:border-orange-400">تاريخي وتراثي</button>
-                <button type="button" onclick="selectStyle(this, 'قصص كوميكس ومانجا')" class="style-btn border border-slate-700 bg-slate-800/50 py-3 px-4 rounded-xl text-sm font-semibold transition hover:border-orange-400">كوميكس ومانجا</button>
-                <button type="button" onclick="selectStyle(this, 'رسم سبورة بيضاء')" class="style-btn border border-slate-700 bg-slate-800/50 py-3 px-4 rounded-xl text-sm font-semibold transition hover:border-orange-400">سبورة بيضاء</button>
-                <button type="button" onclick="selectStyle(this, 'خطوط عربية حرة')" class="style-btn border border-slate-700 bg-slate-800/50 py-3 px-4 rounded-xl text-sm font-semibold transition hover:border-orange-400">خطوط عربية</button>
-            </div>
+        <label class="section-label">⚙️ إعدادات الإخراج والإيقاع:</label>
+        <div class="grid-moods" id="moodContainer">
+            <button type="button" class="option-btn" onclick="setMood(this, 'وثائقي')">📄 وثائقي (رصين)</button>
+            <button type="button" class="option-btn active-mood" onclick="setMood(this, 'سينمائي')">🎬 سينمائي (عميق)</button>
+            <button type="button" class="option-btn" onclick="setMood(this, 'ديناميكي')">⚡ ديناميكي (سريع)</button>
         </div>
 
-        <!-- 3. اختيار الخصائص المزاجية الثلاث -->
-        <div class="mb-8">
-            <label class="block text-sm font-bold text-slate-300 mb-3">⚙️ إعدادات الإخراج والإيقاع:</label>
-            <div class="grid grid-cols-3 gap-3" id="moodContainer">
-                <button type="button" onclick="selectMood(this, 'وثائقي')" class="mood-btn border border-slate-700 bg-slate-800/50 py-2.5 rounded-xl text-sm font-bold transition">📄 وثائقي (رصين)</button>
-                <button type="button" onclick="selectMood(this, 'سينمائي')" class="mood-btn active border border-slate-700 bg-slate-800/50 py-2.5 rounded-xl text-sm font-bold transition">🎬 سينمائي (عميق)</button>
-                <button type="button" onclick="selectMood(this, 'ديناميكي')" class="mood-btn border border-slate-700 bg-slate-800/50 py-2.5 rounded-xl text-sm font-bold transition">⚡ ديناميكي (سريع)</button>
-            </div>
-        </div>
-
-        <!-- زر التشغيل -->
-        <button onclick="startProduction()" id="generateBtn"
-            class="w-full py-4 rounded-2xl font-black text-lg bg-gradient-to-l from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 text-white shadow-lg shadow-orange-500/20 transition transform active:scale-[0.99]">
+        <button type="button" class="submit-btn" id="generateBtn" onclick="generateContent()">
             🚀 توليد البرومبت وبناء المشاهد الآن
         </button>
 
-        <!-- شريط الحالة الحي (WebSocket Status) -->
-        <div id="statusBox" class="hidden mt-6 p-4 rounded-2xl bg-slate-900/90 border border-slate-700/80 flex items-center gap-3">
-            <div class="w-3 h-3 rounded-full bg-orange-500 animate-ping"></div>
-            <span id="statusText" class="text-sm font-semibold text-slate-200">جاري الاتصال بالاستديو...</span>
-        </div>
+        <div id="statusBox" class="status-box"></div>
 
-        <!-- صندوق عرض النتيجة والبرومبت الاحترافي -->
-        <div id="resultBox" class="hidden mt-6 space-y-4">
-            <h3 class="text-lg font-bold text-emerald-400">✨ المخرجات الهندسية الجاهزة لأداة VIDEO-LIKE:</h3>
-            <div id="scenesOutput" class="space-y-3"></div>
+        <div id="resultsContainer" class="results-container">
+            <div class="results-title">✨ المخرجات الهندسية الجاهزة لأداة VIDEO-LIKE:</div>
+            <div id="scenesList"></div>
         </div>
-
-    </main>
+    </div>
 
     <script>
         let selectedStyle = 'موشن جرافيك حديث';
         let selectedMood = 'سينمائي';
-        
-        // تحديد رابط الـ WebSocket تلقائياً ليتوافق مع Render (wss) أو المحلي (ws)
-        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-        const wsUrl = `${protocol}//${window.location.host}/ws/studio`;
-        let socket;
 
-        function connectWebSocket() {
-            socket = new WebSocket(wsUrl);
-            socket.onmessage = function(event) {
-                const data = JSON.parse(event.data);
-                const statusBox = document.getElementById('statusBox');
-                const statusText = document.getElementById('statusText');
-                
-                statusBox.classList.remove('hidden');
-                statusText.innerText = data.msg;
-
-                if (data.step === 3 && data.generated_payload) {
-                    renderScenes(data.generated_payload.scenes);
-                    document.getElementById('generateBtn').disabled = false;
-                    document.getElementById('generateBtn').innerText = '🚀 توليد البرومبت وبناء المشاهد الآن';
-                }
-            };
-        }
-
-        connectWebSocket();
-
-        function selectStyle(btn, style) {
-            document.querySelectorAll('.style-btn').forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
+        function setStyle(btn, style) {
+            document.querySelectorAll('#styleContainer .option-btn').forEach(b => b.classList.remove('active-style'));
+            btn.classList.add('active-style');
             selectedStyle = style;
         }
 
-        function selectMood(btn, mood) {
-            document.querySelectorAll('.mood-btn').forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
+        function setMood(btn, mood) {
+            document.querySelectorAll('#moodContainer .option-btn').forEach(b => b.classList.remove('active-mood'));
+            btn.classList.add('active-mood');
             selectedMood = mood;
         }
 
-        function startProduction() {
+        async function generateContent() {
             const idea = document.getElementById('videoIdea').value.trim();
+            const btn = document.getElementById('generateBtn');
+            const statusBox = document.getElementById('statusBox');
+            const resultsContainer = document.getElementById('resultsContainer');
+
             if (!idea) {
-                alert('يرجى كتابة فكرة الفيديو أولاً!');
+                alert('يرجى كتابة فكرة الفيديو في الخانة المخصصة أولاً!');
                 return;
             }
 
-            if (socket.readyState !== WebSocket.OPEN) {
-                connectWebSocket();
-            }
-
-            document.getElementById('generateBtn').disabled = true;
-            document.getElementById('generateBtn').innerText = '⏳ جاري المعالجة السحابية...';
-            document.getElementById('resultBox').classList.add('hidden');
-
-            socket.send(JSON.stringify({
-                idea: idea,
-                style: selectedStyle,
-                mood: selectedMood
-            }));
-        }
-
-        function renderScenes(scenes) {
-            const container = document.getElementById('scenesOutput');
-            container.innerHTML = '';
-            document.getElementById('resultBox').classList.remove('hidden');
-
-            scenes.forEach(scene => {
-                const card = document.createElement('div');
-                card.className = 'p-4 rounded-2xl bg-slate-800/70 border border-slate-700 space-y-2';
-                card.innerHTML = `
-                    <div class="flex justify-between items-center text-xs text-slate-400">
-                        <span class="font-bold text-orange-400">المشهد #${scene.scene_number}</span>
-                        <span class="bg-slate-900 px-2 py-1 rounded-md">الانتقال: ${scene.transition}</span>
-                    </div>
+            // تفعيل حالة التحميل
+            btn.disabled = true;
+            btn.innerText = '⏳ جاري هندسة المشاهد وتوليد البرومبت...';
+            statusBox.className = 'status-box';
+            statusBox.style.display = 'block';
